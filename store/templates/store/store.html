@@ -1,0 +1,11 @@
+<h1>Products</h1>
+{% for product in products %}
+<div>
+    <img src="{{ product.image.url }}" width="150">
+    <h2>{{ product.name }}</h2>
+    <p>Price: ₹{{ product.price }}</p>
+    <p>Stock: {{ product.stock }}</p>
+    <a href="{% url 'add_to_cart' product.id %}">Add to Cart</a>
+</div>
+{% endfor %}
+<a href="{% url 'cart' %}">View Cart</a>

@@ -1,0 +1,78 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+</head>
+<body>
+    <div class="container py-5">
+        <h2 class="mb-4">Checkout</h2>
+
+        <!-- Cart Summary -->
+        <div class="card shadow p-3 mb-4">
+            <h5>Order Summary</h5>
+            <ul class="list-group list-group-flush">
+                {% for item in items %}
+                <li class="list-group-item d-flex justify-content-between">
+                    {{ item.name }} × {{ item.quantity }}
+                    <span>₹{{ item.price }}</span>
+                </li>
+                {% endfor %}
+                <li class="list-group-item d-flex justify-content-between fw-bold">
+                    Subtotal
+                    <span>₹{{ subtotal }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between fw-bold">
+                    Total
+                    <span>₹{{ total }}</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Place Order Button -->
+        <button class="btn btn-success btn-lg w-100" onclick="placeOrder()">Place Order</button>
+    </div>
+
+    <script>
+        // 🔑 Get CSRF token from cookie
+        function getCSRFToken() {
+            let cookieValue = null;
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith("csrftoken=")) {
+                    cookieValue = cookie.substring("csrftoken=".length, cookie.length);
+                    break;
+                }
+            }
+            return cookieValue;
+        }
+
+        // 🚀 Place Order Function
+        function placeOrder() {
+            axios.post("/checkout/", {}, {
+                headers: {
+                    "X-CSRFToken": getCSRFToken(),
+                    "Content-Type": "application/json"
+                }
+            })
+            .then(response => {
+                if (response.data.success) {
+                    alert("✅ Order placed successfully!");
+                    window.location.href = response.data.redirect;
+                } else {
+                    alert("❌ Failed: " + (response.data.error || "Unknown error"));
+                }
+            })
+            .catch(error => {
+                console.error("Checkout Error:", error);
+                alert("⚠️ Server error while placing order.");
+            });
+        }
+    </script>
+</body>
+</html>

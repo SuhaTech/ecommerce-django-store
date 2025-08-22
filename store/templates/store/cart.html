@@ -1,0 +1,132 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        .cart-item {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+        }
+        .cart-img {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+        }
+        .btn-sm {
+            padding: 4px 10px;
+        }
+    </style>
+</head>
+<body class="container py-4">
+
+    <h2 class="mb-4">🛒 Your Cart</h2>
+
+    {% if items %}
+        <div id="cart-items">
+            {% for item in items %}
+            <div class="row cart-item align-items-center" data-slug="{{ item.slug }}">
+                <div class="col-2">
+                    <img src="{{ item.image }}" alt="{{ item.name }}" class="cart-img rounded">
+                </div>
+                <div class="col-3">
+                    <h6>{{ item.name }}</h6>
+                    <p class="text-muted">₹{{ item.price }}</p>
+                </div>
+                <div class="col-3 d-flex align-items-center">
+                    <button class="btn btn-outline-secondary btn-sm qty-decrease">-</button>
+                    <input type="text" class="form-control text-center mx-2" style="width:50px;" value="{{ item.qty }}" readonly>
+                    <button class="btn btn-outline-secondary btn-sm qty-increase">+</button>
+                </div>
+                <div class="col-2">
+                    <strong>₹<span class="line-total">{{ item.line_total }}</span></strong>
+                </div>
+                <div class="col-2">
+                    <button class="btn btn-danger btn-sm remove-item">Remove</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="d-flex justify-content-between mt-4">
+            <h4>Total: ₹<span id="cart-subtotal">{{ subtotal }}</span></h4>
+            <a href="/checkout/" class="btn btn-success">Proceed to Checkout</a>
+        </div>
+    {% else %}
+        <p class="text-muted">Your cart is empty.</p>
+    {% endif %}
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const cartItems = document.getElementById("cart-items");
+    const subtotalEl = document.getElementById("cart-subtotal");
+
+    // Helper: update subtotal and optionally remove item
+    function updateCartUI(slug, qty, subtotal) {
+        if (qty === 0) {
+            document.querySelector(`[data-slug="${slug}"]`)?.remove();
+        } else {
+            const row = document.querySelector(`[data-slug="${slug}"]`);
+            if (row) {
+                row.querySelector("input").value = qty;
+            }
+        }
+        subtotalEl.textContent = subtotal;
+    }
+
+    // Increase quantity
+    cartItems?.addEventListener("click", async (e) => {
+        if (e.target.classList.contains("qty-increase")) {
+            const row = e.target.closest(".cart-item");
+            const slug = row.dataset.slug;
+            let qty = parseInt(row.querySelector("input").value) + 1;
+
+            let res = await fetch(`/cart/set/${slug}/?qty=${qty}`);
+            let data = await res.json();
+
+            updateCartUI(slug, qty, data.subtotal);
+            row.querySelector(".line-total").textContent = (parseFloat(row.querySelector("input").value) * parseFloat(row.querySelector("p").textContent.replace("₹", ""))).toFixed(2);
+        }
+    });
+
+    // Decrease quantity
+    cartItems?.addEventListener("click", async (e) => {
+        if (e.target.classList.contains("qty-decrease")) {
+            const row = e.target.closest(".cart-item");
+            const slug = row.dataset.slug;
+            let qty = parseInt(row.querySelector("input").value) - 1;
+
+            if (qty < 1) {
+                let res = await fetch(`/cart/remove/${slug}/`);
+                let data = await res.json();
+                updateCartUI(slug, 0, data.subtotal);
+            } else {
+                let res = await fetch(`/cart/set/${slug}/?qty=${qty}`);
+                let data = await res.json();
+                updateCartUI(slug, qty, data.subtotal);
+                row.querySelector(".line-total").textContent = (qty * parseFloat(row.querySelector("p").textContent.replace("₹", ""))).toFixed(2);
+            }
+        }
+    });
+
+    // Remove item
+    cartItems?.addEventListener("click", async (e) => {
+        if (e.target.classList.contains("remove-item")) {
+            const row = e.target.closest(".cart-item");
+            const slug = row.dataset.slug;
+
+            let res = await fetch(`/cart/remove/${slug}/`);
+            let data = await res.json();
+
+            updateCartUI(slug, 0, data.subtotal);
+        }
+    });
+});
+</script>
+
+</body>
+</html>

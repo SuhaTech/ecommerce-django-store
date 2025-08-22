@@ -1,0 +1,47 @@
+{% extends 'store/base.html' %}
+{% block title %}{{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-md-6 mb-3">
+    {% if product.image %}
+    <img src="{{ product.image.url }}" class="img-fluid rounded shadow" alt="{{ product.name }}">
+    {% endif %}
+  </div>
+  <div class="col-md-6">
+    <h2>{{ product.name }}</h2>
+    <p class="h4 fw-bold">₹{{ product.price }}</p>
+    <p class="text-muted">Stock: <span id="stock-{{ product.slug }}">{{ product.stock }}</span></p>
+    <p>{{ product.description|linebreaks }}</p>
+
+    <div class="input-group mb-3" style="max-width:160px;">
+      <button class="btn btn-outline-secondary" id="decr">−</button>
+      <input id="qty" class="form-control text-center" value="1">
+      <button class="btn btn-outline-secondary" id="incr">+</button>
+    </div>
+    <button class="btn btn-primary btn-lg" id="addBtn">Add to Cart</button>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const qtyInput = document.getElementById('qty');
+document.getElementById('incr').addEventListener('click',()=> qtyInput.value = parseInt(qtyInput.value||1)+1 );
+document.getElementById('decr').addEventListener('click',()=> qtyInput.value = Math.max(1, parseInt(qtyInput.value||1)-1) );
+
+document.getElementById('addBtn').addEventListener('click', async () => {
+  const qty = parseInt(qtyInput.value||1);
+  const slug = "{{ product.slug }}";
+  try{
+    const res = await axios.post(`/cart/add/${slug}/`, `qty=${qty}`, { headers: {'Content-Type':'application/x-www-form-urlencoded'} });
+    if(res.data.ok){
+      updateNavCart(res.data.cart_count);
+      const btn = document.getElementById('addBtn');
+      btn.textContent = 'Added ✓';
+      setTimeout(()=> btn.textContent='Add to Cart', 1200);
+    }
+  }catch(err){ alert('Failed to add to cart.') }
+});
+</script>
+{% endblock %}

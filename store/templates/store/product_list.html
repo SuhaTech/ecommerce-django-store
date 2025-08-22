@@ -1,0 +1,57 @@
+{% extends 'store/base.html' %}
+{% block title %}Products{% endblock %}
+
+{% block content %}
+<h2 class="mb-3">Products</h2>
+<div class="row g-3">
+  {% for p in products %}
+  <div class="col-sm-6 col-md-4 col-lg-3">
+    <div class="card product-card h-100 shadow-sm">
+      {% if p.image %}
+      <img src="{{ p.image.url }}" class="card-img-top" alt="{{ p.name }}">
+      {% endif %}
+      <div class="card-body d-flex flex-column">
+        <h5 class="card-title">{{ p.name }}</h5>
+        <p class="mb-1 fw-bold">₹{{ p.price }}</p>
+        <p class="text-muted small mb-2">Stock: <span id="stock-{{ p.slug }}">{{ p.stock }}</span></p>
+
+        <div class="mt-auto">
+          <div class="input-group mb-2">
+            <button class="btn btn-outline-secondary btn-qty-decrease" data-slug="{{ p.slug }}">−</button>
+            <input type="text" class="form-control text-center qty-input" id="qty-{{ p.slug }}" value="1" style="max-width:80px;">
+            <button class="btn btn-outline-secondary btn-qty-increase" data-slug="{{ p.slug }}">+</button>
+          </div>
+          <button class="btn btn-primary w-100 btn-add-to-cart" data-slug="{{ p.slug }}">Add to Cart</button>
+          <a href="{{ p.get_absolute_url }}" class="btn btn-link w-100">View</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('click', async (e) => {
+  if (e.target.matches('.btn-add-to-cart')) {
+    const slug = e.target.dataset.slug;
+    const input = document.getElementById('qty-'+slug);
+    const qty = parseInt(input.value || 1);
+    try {
+      const res = await axios.post(`/cart/add/${slug}/`, `qty=${qty}`, {
+        headers: {'Content-Type':'application/x-www-form-urlencoded'}
+      });
+      if (res.data.ok) {
+        updateNavCart(res.data.cart_count);
+        e.target.textContent = 'Added ✓';
+        setTimeout(()=> e.target.textContent = 'Add to Cart', 1200);
+      }
+    } catch (err) {
+      alert('Failed to add to cart.');
+      console.error(err);
+    }
+  }
+});
+</script>
+{% endblock %}
